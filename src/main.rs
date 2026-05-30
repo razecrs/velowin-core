@@ -1,5 +1,6 @@
 pub mod manager;
 pub mod config;
+pub mod dwindle;
 
 use windows::{
     core::*,

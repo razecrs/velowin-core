@@ -1,9 +1,25 @@
 use std::collections::HashMap;
 use windows::Win32::Foundation::HWND;
+use windows::Win32::UI::WindowsAndMessaging::{SetWindowPos, SWP_NOZORDER, SWP_NOACTIVATE, GetSystemMetrics, SM_CXSCREEN, SM_CYSCREEN};
+use crate::dwindle::{DwindleNode, Rect};
+
+// windows-rs HWND is a raw pointer, so it's not Send/Sync by default.
+// We need to wrap it so we can keep the WindowManager in a global Mutex.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct SendHWND(pub HWND);
+
+impl std::hash::Hash for SendHWND {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.0.0.hash(state);
+    }
+}
+
+unsafe impl Send for SendHWND {}
+unsafe impl Sync for SendHWND {}
 
 #[derive(Debug, Clone)]
 pub struct WindowState {
-    pub hwnd: HWND,
+    pub hwnd: SendHWND,
     pub title: String,
     pub class_name: String,
     pub is_floating: bool,
@@ -12,12 +28,12 @@ pub struct WindowState {
 
 pub struct Workspace {
     pub id: u32,
-    pub windows: Vec<HWND>,
+    pub root: Option<DwindleNode>,
     pub layout: LayoutType,
 }
 
 pub enum LayoutType {
-    Dwindle, // Hyprland default
+    Dwindle,
     Master,
 }
 
@@ -33,7 +49,7 @@ impl WindowManager {
         for i in 1..=10 {
             workspaces.push(Workspace {
                 id: i,
-                windows: Vec::new(),
+                root: None,
                 layout: LayoutType::Dwindle,
             });
         }
@@ -46,8 +62,9 @@ impl WindowManager {
     }
 
     pub fn add_window(&mut self, hwnd: HWND, title: String, class_name: String) {
+        let send_hwnd = SendHWND(hwnd);
         let state = WindowState {
-            hwnd,
+            hwnd: send_hwnd,
             title,
             class_name,
             is_floating: false,
@@ -57,7 +74,20 @@ impl WindowManager {
         self.active_windows.insert(hwnd.0 as isize, state);
         
         if let Some(ws) = self.workspaces.iter_mut().find(|w| w.id == self.active_workspace) {
-            ws.windows.push(hwnd);
+            match &mut ws.root {
+                None => {
+                    // First window on the workspace
+                    unsafe {
+                        let sw = GetSystemMetrics(SM_CXSCREEN);
+                        let sh = GetSystemMetrics(SM_CYSCREEN);
+                        ws.root = Some(DwindleNode::new_leaf(send_hwnd, Rect { x: 0, y: 0, width: sw, height: sh }));
+                    }
+                }
+                Some(root) => {
+                    // Split the existing layout (dwindle style)
+                    root.split(send_hwnd);
+                }
+            }
         }
         
         self.recalculate_layout();
@@ -65,14 +95,31 @@ impl WindowManager {
 
     pub fn remove_window(&mut self, hwnd: HWND) {
         self.active_windows.remove(&(hwnd.0 as isize));
-        for ws in &mut self.workspaces {
-            ws.windows.retain(|&h| h != hwnd);
-        }
+        // TODO: implement node removal/rebalancing for Dwindle tree
         self.recalculate_layout();
     }
 
     pub fn recalculate_layout(&self) {
-        // TODO: Implement BSP (Dwindle) layout algorithm
-        println!("Recalculating layout for workspace {}", self.active_workspace);
+        if let Some(ws) = self.workspaces.iter().find(|w| w.id == self.active_workspace) {
+            if let Some(root) = &ws.root {
+                let mut results = Vec::new();
+                root.get_layout_results(&mut results);
+
+                for (send_hwnd, rect) in results {
+                    unsafe {
+                        // move the actual windows on screen
+                        let _ = SetWindowPos(
+                            send_hwnd.0,
+                            HWND(std::ptr::null_mut()),
+                            rect.x,
+                            rect.y,
+                            rect.width,
+                            rect.height,
+                            SWP_NOZORDER | SWP_NOACTIVATE,
+                        );
+                    }
+                }
+            }
+        }
     }
 }

@@ -1,8 +1,8 @@
 use nom::{
     bytes::complete::{tag, take_until, take_while1},
-    character::complete::{multispace0, multispace1, space0},
-    sequence::{delimited, preceded, tuple},
-    IResult,
+    character::complete::multispace0,
+    sequence::{delimited, tuple},
+    IResult, Parser,
 };
 use std::collections::HashMap;
 
@@ -19,10 +19,10 @@ fn parse_section_name(input: &str) -> IResult<&str, &str> {
 
 fn parse_section_body(input: &str) -> IResult<&str, &str> {
     delimited(
-        tuple((multispace0, tag("{"), multispace0)),
+        (multispace0, tag("{"), multispace0),
         take_until("}"),
         tag("}"),
-    )(input)
+    ).parse(input)
 }
 
 pub fn parse_config(content: &str) -> Config {
@@ -30,11 +30,12 @@ pub fn parse_config(content: &str) -> Config {
     let mut input = content;
 
     while !input.is_empty() {
-        let result: IResult<&str, (&str, &str)> = tuple((
+        let result: IResult<&str, (&str, &str)> = (
             multispace0,
             parse_section_name,
             parse_section_body,
-        ))(input).map(|(next_input, (_, name, body))| (next_input, (name, body)));
+        ).map(|(_, name, body)| (name, body))
+        .parse(input);
 
         match result {
             Ok((next_input, (name, body))) => {
