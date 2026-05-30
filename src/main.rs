@@ -1,12 +1,29 @@
 #![allow(non_snake_case)]
 
 pub mod config;
+pub mod debug;
 pub mod desktop;
+pub mod devices;
+pub mod errorOverlay;
+pub mod event;
 pub mod helpers;
+pub mod i18n;
+pub mod init;
 pub mod layout;
 pub mod managers;
+pub mod notification;
+pub mod pch;
+pub mod plugins;
+pub mod protocols;
 pub mod render;
+pub mod xwayland;
+
 pub mod Compositor;
+pub mod defines;
+pub mod includes;
+pub mod macros;
+pub mod SharedDefs;
+pub mod version;
 
 use windows::{
     core::*,

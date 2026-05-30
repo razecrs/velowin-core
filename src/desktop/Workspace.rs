@@ -1,4 +1,4 @@
-use crate::layout::DwindleLayout::DwindleNode;
+use crate::layout::algorithm::tiled::dwindle::DwindleAlgorithm::DwindleNode;
 
 pub struct Workspace {
     pub id: u32,

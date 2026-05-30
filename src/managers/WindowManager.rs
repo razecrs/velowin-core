@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use windows::Win32::Foundation::HWND;
 use windows::Win32::UI::WindowsAndMessaging::{SetWindowPos, SWP_NOZORDER, SWP_NOACTIVATE, GetSystemMetrics, SM_CXSCREEN, SM_CYSCREEN};
-use crate::layout::DwindleLayout::{DwindleNode, Rect};
+use crate::layout::algorithm::tiled::dwindle::DwindleAlgorithm::{DwindleNode, Rect};
 use crate::helpers::Types::SendHWND;
 use crate::desktop::Window::WindowState;
 use crate::desktop::Workspace::{Workspace, LayoutType};
