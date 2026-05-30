@@ -1,9 +1,3 @@
-use nom::{
-    bytes::complete::{tag, take_until, take_while1},
-    character::complete::multispace0,
-    sequence::{delimited, tuple},
-    IResult, Parser,
-};
 use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
@@ -14,12 +8,19 @@ pub struct Keybind {
     pub arg: String,
 }
 
+#[derive(Debug, Clone)]
+pub struct WindowRule {
+    pub rule: String,
+    pub regex: String,
+}
+
 #[derive(Debug, Clone, Default)]
 pub struct Config {
     pub general: HashMap<String, String>,
     pub decoration: HashMap<String, String>,
     pub animations: HashMap<String, String>,
     pub binds: Vec<Keybind>,
+    pub window_rules: Vec<WindowRule>,
     pub exec_once: Vec<String>,
 }
 
@@ -49,7 +50,6 @@ pub fn parse_config(content: &str) -> Config {
 
             match directive {
                 "bind" => {
-                    // format: bind = MODS, KEY, dispatcher, arg
                     let parts: Vec<&str> = body.split(',').map(|s| s.trim()).collect();
                     if parts.len() >= 3 {
                         config.binds.push(Keybind {
@@ -60,11 +60,20 @@ pub fn parse_config(content: &str) -> Config {
                         });
                     }
                 }
+                "windowrule" => {
+                    let parts: Vec<&str> = body.split(',').map(|s| s.trim()).collect();
+                    if parts.len() >= 2 {
+                        config.window_rules.push(WindowRule {
+                            rule: parts[0].to_string(),
+                            regex: parts[1].to_string(),
+                        });
+                    }
+                }
                 "exec-once" => {
                     config.exec_once.push(body.to_string());
                 }
                 _ => {
-                    // handle sections (old logic or expand for simple key-value)
+                    // basic section handling (not nested for simplicity here)
                 }
             }
         }
@@ -76,8 +85,8 @@ pub fn parse_config(content: &str) -> Config {
 fn parse_mods(input: &str) -> u32 {
     let mut mods = 0;
     for part in input.split('&') {
-        match part.to_uppercase().as_str() {
-            "SUPER" | "MOD4" | "WIN" => mods |= 0x0008, // MOD_WIN
+        match part.trim().to_uppercase().as_str() {
+            "SUPER" | "MOD4" | "WIN" => mods |= 0x0008,
             "SHIFT" => mods |= 0x0004,
             "CTRL" | "CONTROL" => mods |= 0x0002,
             "ALT" => mods |= 0x0001,
