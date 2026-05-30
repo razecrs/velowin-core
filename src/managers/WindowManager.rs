@@ -33,14 +33,11 @@ impl WindowManager {
 
     pub fn add_window(&mut self, hwnd: HWND, title: String, class_name: String) {
         let send_hwnd = SendHWND(hwnd);
-        let state = WindowState {
-            hwnd: send_hwnd,
-            title,
-            class_name,
-            is_floating: false,
-            workspace_id: self.active_workspace,
-        };
+        let mut state = WindowState::new(send_hwnd, title, class_name, self.active_workspace);
         
+        // start the border rotation animation (Hyprland vibe)
+        state.border_angle.set(360.0); 
+
         self.active_windows.insert(hwnd.0 as isize, state);
         
         if let Some(ws) = self.workspaces.iter_mut().find(|w| w.id == self.active_workspace) {
@@ -78,8 +75,12 @@ impl WindowManager {
 
                 for (send_hwnd, rect) in results {
                     unsafe {
-                        crate::render::Renderer::CreateBorderWrapper(send_hwnd, 2, 10.0);
-                        crate::render::Renderer::UpdateBorderPositionWrapper(send_hwnd, rect.x, rect.y, rect.width, rect.height);
+                        // find the current window state to get its animated angle/opacity
+                        if let Some(window) = self.active_windows.get(&(send_hwnd.0.0 as isize)) {
+                            crate::render::Renderer::CreateBorderWrapper(send_hwnd, 2, 10.0);
+                            crate::render::Renderer::SetBorderAngleWrapper(send_hwnd, window.border_angle.value);
+                            crate::render::Renderer::UpdateBorderPositionWrapper(send_hwnd, rect.x, rect.y, rect.width, rect.height);
+                        }
 
                         let _ = SetWindowPos(
                             send_hwnd.0,

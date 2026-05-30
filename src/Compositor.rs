@@ -9,6 +9,7 @@ use windows::{
 };
 use crate::managers::WindowManager::WindowManager;
 use crate::managers::KeybindManager::KeybindManager;
+use crate::managers::animation::AnimationManager::AnimationManager;
 use crate::config::ConfigManager::parse_config;
 use crate::render::Renderer;
 use std::sync::{Arc, Mutex};
@@ -27,6 +28,10 @@ pub static KB: Lazy<Arc<Mutex<KeybindManager>>> = Lazy::new(|| {
     Arc::new(Mutex::new(KeybindManager::new(parse_config(dummy_conf))))
 });
 
+pub static ANIMATION_MANAGER: Lazy<Arc<AnimationManager>> = Lazy::new(|| {
+    Arc::new(AnimationManager::new())
+});
+
 pub fn init() -> Result<()> {
     unsafe {
         let overlay_hwnd = create_overlay_window()?;
@@ -36,6 +41,14 @@ pub fn init() -> Result<()> {
             return Err(Error::from_win32());
         }
         println!("DirectComposition Renderer Initialized.");
+
+        // Start Animation Tick Thread
+        std::thread::spawn(|| {
+            loop {
+                ANIMATION_MANAGER.tick();
+                std::thread::sleep(std::time::Duration::from_millis(16)); // ~60fps
+            }
+        });
 
         let _kb_hook = SetWindowsHookExW(
             WH_KEYBOARD_LL,
@@ -126,6 +139,12 @@ unsafe extern "system" fn win_event_proc(
         }
         EVENT_SYSTEM_FOREGROUND => {
             println!("[Foreground] {:?}", hwnd);
+            let mut wm = WM.lock().unwrap();
+            // TODO: set active window, trigger focus animations
+            if let Some(window) = wm.active_windows.get_mut(&(hwnd.0 as isize)) {
+                // fade in active window (just a test animation)
+                window.opacity.set(1.0);
+            }
         }
         _ => {}
     }
