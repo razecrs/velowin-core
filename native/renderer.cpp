@@ -103,8 +103,38 @@ extern "C" {
         data.visual->SetOffsetX((float)(x - data.borderSize));
         data.visual->SetOffsetY((float)(y - data.borderSize));
         
-        // TODO: In a full 1:1, we would use Direct2D here to draw a rounded rectangle
-        // onto a surface attached to this visual. For now, we are just positioning the node.
+        // --- Direct2D Drawing Logic ---
+        // Create a surface for the visual if it doesn't exist
+        IDCompositionSurface* surface = nullptr;
+        HRESULT hr = g_State.dcompDevice->CreateSurface(width + (data.borderSize * 2), height + (data.borderSize * 2), 
+                                                        DXGI_FORMAT_B8G8R8A8_UNORM, DXGI_ALPHA_MODE_PREMULTIPLIED, &surface);
+        
+        if (SUCCEEDED(hr)) {
+            POINT offset;
+            ID2D1DeviceContext* dc = nullptr;
+            hr = surface->BeginDraw(nullptr, __uuidof(ID2D1DeviceContext), (void**)&dc, &offset);
+            
+            if (SUCCEEDED(hr)) {
+                dc->Clear(D2D1::ColorF(0, 0, 0, 0));
+                
+                ID2D1SolidColorBrush* brush = nullptr;
+                dc->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::RoyalBlue), &brush);
+                
+                D2D1_ROUNDED_RECT roundedRect = D2D1::RoundedRect(
+                    D2D1::RectF((float)data.borderSize, (float)data.borderSize, (float)(width + data.borderSize), (float)(height + data.borderSize)),
+                    data.rounding, data.rounding
+                );
+                
+                dc->DrawRoundedRectangle(roundedRect, brush, (float)data.borderSize);
+                
+                if (brush) brush->Release();
+                surface->EndDraw();
+                dc->Release();
+            }
+            
+            data.visual->SetContent(surface);
+            surface->Release();
+        }
 
         g_State.dcompDevice->Commit();
     }

@@ -100,13 +100,22 @@ impl WindowManager {
     }
 
     pub fn recalculate_layout(&self) {
+        // fetch gaps from config (defaulting to hyprland defaults if not found)
+        let config = crate::KB.lock().unwrap().config.clone();
+        let gaps_in = config.get_int("general", "gaps_in", 5);
+        let gaps_out = config.get_int("general", "gaps_out", 20);
+
         if let Some(ws) = self.workspaces.iter().find(|w| w.id == self.active_workspace) {
             if let Some(root) = &ws.root {
                 let mut results = Vec::new();
-                root.get_layout_results(&mut results);
+                root.get_layout_results(&mut results, gaps_in, gaps_out);
 
                 for (send_hwnd, rect) in results {
                     unsafe {
+                        // first, tell the compositor to update/create the border for this HWND
+                        crate::ffi::CreateBorder(send_hwnd.0, 2, 10.0);
+                        crate::ffi::UpdateBorderPosition(send_hwnd.0, rect.x, rect.y, rect.width, rect.height);
+
                         // move the actual windows on screen
                         let _ = SetWindowPos(
                             send_hwnd.0,

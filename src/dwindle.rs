@@ -60,14 +60,22 @@ impl DwindleNode {
         ));
     }
 
-    // walk the tree and get all windows + their calculated rects
-    pub fn get_layout_results(&self, results: &mut Vec<(SendHWND, Rect)>) {
+    // walk the tree and get all windows + their calculated rects (with gaps)
+    pub fn get_layout_results(&self, results: &mut Vec<(SendHWND, Rect)>, gaps_in: i32, gaps_out: i32) {
         if let Some(hwnd) = self.hwnd {
-            results.push((hwnd, self.box_area));
+            // Apply gaps to the leaf node
+            let effective_rect = Rect {
+                x: self.box_area.x + gaps_out,
+                y: self.box_area.y + gaps_out,
+                width: self.box_area.width - (gaps_out * 2),
+                height: self.box_area.height - (gaps_out * 2),
+            };
+            results.push((hwnd, effective_rect));
         }
         if let Some((child1, child2)) = &self.children {
-            child1.get_layout_results(results);
-            child2.get_layout_results(results);
+            // TODO: properly handle 'gaps_in' between children
+            child1.get_layout_results(results, gaps_in, gaps_out);
+            child2.get_layout_results(results, gaps_in, gaps_out);
         }
     }
 }

@@ -14,13 +14,24 @@ pub struct Keybind {
     pub arg: String,
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Clone, Default)]
 pub struct Config {
     pub general: HashMap<String, String>,
     pub decoration: HashMap<String, String>,
     pub animations: HashMap<String, String>,
     pub binds: Vec<Keybind>,
     pub exec_once: Vec<String>,
+}
+
+impl Config {
+    pub fn get_int(&self, section: &str, key: &str, default: i32) -> i32 {
+        let map = match section {
+            "general" => &self.general,
+            "decoration" => &self.decoration,
+            _ => return default,
+        };
+        map.get(key).and_then(|s| s.parse().ok()).unwrap_or(default)
+    }
 }
 
 pub fn parse_config(content: &str) -> Config {
