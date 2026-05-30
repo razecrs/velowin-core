@@ -2,7 +2,7 @@ use windows::Win32::UI::Input::KeyboardAndMouse::*;
 use windows::Win32::UI::WindowsAndMessaging::*;
 use windows::Win32::Foundation::*;
 use std::process::Command;
-use crate::config::Config;
+use crate::config::ConfigManager::Config;
 
 pub struct KeybindManager {
     pub config: Config,
@@ -24,7 +24,6 @@ impl KeybindManager {
     }
 
     fn match_key(&self, key_str: &str, vk_code: u32) -> bool {
-        // basic mapping for now, should be expanded to full 1:1 hyprland keys
         match key_str.to_uppercase().as_str() {
             "RETURN" | "ENTER" => vk_code == VK_RETURN.0 as u32,
             "Q" => vk_code == 'Q' as u32,
@@ -48,7 +47,6 @@ impl KeybindManager {
             }
             "killactive" => {
                 println!("[Dispatch] killactive");
-                // TODO: wm.kill_active()
             }
             _ => println!("[Dispatch] Unknown: {}", dispatcher),
         }

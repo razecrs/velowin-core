@@ -4,7 +4,7 @@ fn main() {
         // Only compile the C++ renderer on Windows
         cc::Build::new()
             .cpp(true)
-            .file("native/renderer.cpp")
+            .file("src/render/Renderer.cpp")
             .compile("velowin_renderer");
             
         println!("cargo:rustc-link-lib=dcomp");

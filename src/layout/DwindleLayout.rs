@@ -1,4 +1,4 @@
-use crate::manager::SendHWND;
+use crate::helpers::Types::SendHWND;
 
 #[derive(Debug, Clone, Copy)]
 pub struct Rect {
