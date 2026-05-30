@@ -2,6 +2,7 @@ pub mod manager;
 pub mod config;
 pub mod dwindle;
 pub mod keybinds;
+pub mod ffi;
 
 use windows::{
     core::*,
@@ -9,6 +10,8 @@ use windows::{
     Win32::UI::Accessibility::*,
     Win32::UI::WindowsAndMessaging::*,
     Win32::UI::Input::KeyboardAndMouse::*,
+    Win32::Graphics::Gdi::*,
+    Win32::System::LibraryLoader::GetModuleHandleW,
 };
 use crate::manager::WindowManager;
 use crate::keybinds::KeybindManager;
@@ -21,7 +24,6 @@ static WM: Lazy<Arc<Mutex<WindowManager>>> = Lazy::new(|| {
 });
 
 static KB: Lazy<Arc<Mutex<KeybindManager>>> = Lazy::new(|| {
-    // dummy config for now, in a real app we'd read ~/.config/hypr/hyprland.conf
     let dummy_conf = "
         bind = SUPER, Return, exec, start alacritty
         bind = SUPER, Q, killactive,
@@ -29,6 +31,54 @@ static KB: Lazy<Arc<Mutex<KeybindManager>>> = Lazy::new(|| {
     ";
     Arc::new(Mutex::new(KeybindManager::new(parse_config(dummy_conf))))
 });
+
+unsafe extern "system" fn overlay_wnd_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
+    match msg {
+        WM_DESTROY => {
+            PostQuitMessage(0);
+            LRESULT(0)
+        }
+        _ => DefWindowProcW(hwnd, msg, wparam, lparam),
+    }
+}
+
+fn create_overlay_window() -> Result<HWND> {
+    unsafe {
+        let instance = GetModuleHandleW(None)?;
+        let wc = WNDCLASSW {
+            lpfnWndProc: Some(overlay_wnd_proc),
+            hInstance: instance.into(),
+            lpszClassName: w!("VelowinOverlay"),
+            style: CS_HREDRAW | CS_VREDRAW,
+            hbrBackground: HBRUSH(GetStockObject(HOLLOW_BRUSH).0),
+            ..Default::default()
+        };
+
+        let atom = RegisterClassW(&wc);
+        if atom == 0 {
+            return Err(Error::from_win32());
+        }
+
+        // Create a layered, transparent, click-through window covering the whole screen
+        let hwnd = CreateWindowExW(
+            WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW | WS_EX_TOPMOST,
+            w!("VelowinOverlay"),
+            w!("Velowin Overlay"),
+            WS_POPUP,
+            0, 0, GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN),
+            None,
+            None,
+            instance,
+            None,
+        )?;
+
+        // Make it fully transparent to normal GDI drawing so DComp can draw underneath/over it
+        SetLayeredWindowAttributes(hwnd, COLORREF(0), 255, LWA_ALPHA)?;
+        ShowWindow(hwnd, SW_SHOW);
+
+        Ok(hwnd)
+    }
+}
 
 unsafe extern "system" fn keyboard_proc(code: i32, w_param: WPARAM, l_param: LPARAM) -> LRESULT {
     if code == HC_ACTION as i32 {
@@ -126,7 +176,15 @@ fn main() -> Result<()> {
     unsafe {
         println!("Velowin: Starting 1:1 Hyprland-like WM...");
 
-        let kb_hook = SetWindowsHookExW(
+        let overlay_hwnd = create_overlay_window()?;
+        
+        if !ffi::InitCompositor(overlay_hwnd) {
+            println!("Failed to initialize DirectX/DirectComposition renderer.");
+            return Err(Error::from_win32());
+        }
+        println!("DirectComposition Renderer Initialized.");
+
+        let _kb_hook = SetWindowsHookExW(
             WH_KEYBOARD_LL,
             Some(keyboard_proc),
             HINSTANCE(std::ptr::null_mut()),
