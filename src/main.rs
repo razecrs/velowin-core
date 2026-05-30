@@ -1,20 +1,64 @@
 pub mod manager;
 pub mod config;
 pub mod dwindle;
+pub mod keybinds;
 
 use windows::{
     core::*,
     Win32::Foundation::*,
     Win32::UI::Accessibility::*,
     Win32::UI::WindowsAndMessaging::*,
+    Win32::UI::Input::KeyboardAndMouse::*,
 };
 use crate::manager::WindowManager;
+use crate::keybinds::KeybindManager;
+use crate::config::parse_config;
 use std::sync::{Arc, Mutex};
 use once_cell::sync::Lazy;
 
 static WM: Lazy<Arc<Mutex<WindowManager>>> = Lazy::new(|| {
     Arc::new(Mutex::new(WindowManager::new()))
 });
+
+static KB: Lazy<Arc<Mutex<KeybindManager>>> = Lazy::new(|| {
+    // dummy config for now, in a real app we'd read ~/.config/hypr/hyprland.conf
+    let dummy_conf = "
+        bind = SUPER, Return, exec, start alacritty
+        bind = SUPER, Q, killactive,
+        exec-once = start velowin-bar
+    ";
+    Arc::new(Mutex::new(KeybindManager::new(parse_config(dummy_conf))))
+});
+
+unsafe extern "system" fn keyboard_proc(code: i32, w_param: WPARAM, l_param: LPARAM) -> LRESULT {
+    if code == HC_ACTION as i32 {
+        let kbd = unsafe { *(l_param.0 as *const KBDLLHOOKSTRUCT) };
+        
+        if w_param.0 == WM_KEYDOWN as usize || w_param.0 == WM_SYSKEYDOWN as usize {
+            let mut mods = 0;
+            unsafe {
+                if (GetKeyState(VK_LWIN.0 as i32) as u16 & 0x8000) != 0 || (GetKeyState(VK_RWIN.0 as i32) as u16 & 0x8000) != 0 {
+                    mods |= 0x0008; // Super
+                }
+                if (GetKeyState(VK_SHIFT.0 as i32) as u16 & 0x8000) != 0 {
+                    mods |= 0x0004;
+                }
+                if (GetKeyState(VK_CONTROL.0 as i32) as u16 & 0x8000) != 0 {
+                    mods |= 0x0002;
+                }
+                if (GetKeyState(VK_MENU.0 as i32) as u16 & 0x8000) != 0 {
+                    mods |= 0x0001; // Alt
+                }
+            }
+
+            let kb = KB.lock().unwrap();
+            if kb.handle_key(kbd.vkCode, mods) {
+                return LRESULT(1); // consume the key
+            }
+        }
+    }
+    unsafe { CallNextHookEx(HHOOK(std::ptr::null_mut()), code, w_param, l_param) }
+}
 
 unsafe extern "system" fn win_event_proc(
     _h_win_event_hook: HWINEVENTHOOK,
@@ -81,6 +125,13 @@ fn get_window_class(hwnd: HWND) -> String {
 fn main() -> Result<()> {
     unsafe {
         println!("Velowin: Starting 1:1 Hyprland-like WM...");
+
+        let kb_hook = SetWindowsHookExW(
+            WH_KEYBOARD_LL,
+            Some(keyboard_proc),
+            HINSTANCE(std::ptr::null_mut()),
+            0,
+        ).map_err(|_| Error::from_win32())?;
 
         let hook = SetWinEventHook(
             EVENT_OBJECT_CREATE,

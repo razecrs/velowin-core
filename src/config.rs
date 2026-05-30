@@ -6,64 +6,72 @@ use nom::{
 };
 use std::collections::HashMap;
 
+#[derive(Debug, Clone)]
+pub struct Keybind {
+    pub mods: u32,
+    pub key: String,
+    pub dispatcher: String,
+    pub arg: String,
+}
+
 #[derive(Debug, Default)]
 pub struct Config {
     pub general: HashMap<String, String>,
     pub decoration: HashMap<String, String>,
     pub animations: HashMap<String, String>,
-}
-
-fn parse_section_name(input: &str) -> IResult<&str, &str> {
-    take_while1(|c: char| c.is_alphabetic())(input)
-}
-
-fn parse_section_body(input: &str) -> IResult<&str, &str> {
-    delimited(
-        (multispace0, tag("{"), multispace0),
-        take_until("}"),
-        tag("}"),
-    ).parse(input)
+    pub binds: Vec<Keybind>,
+    pub exec_once: Vec<String>,
 }
 
 pub fn parse_config(content: &str) -> Config {
     let mut config = Config::default();
-    let mut input = content;
+    
+    for line in content.lines() {
+        let line = line.trim();
+        if line.is_empty() || line.starts_with('#') {
+            continue;
+        }
 
-    while !input.is_empty() {
-        let result: IResult<&str, (&str, &str)> = (
-            multispace0,
-            parse_section_name,
-            parse_section_body,
-        ).map(|(_, name, body)| (name, body))
-        .parse(input);
+        if let Some((directive, body)) = line.split_once('=') {
+            let directive = directive.trim();
+            let body = body.trim();
 
-        match result {
-            Ok((next_input, (name, body))) => {
-                let map = match name {
-                    "general" => &mut config.general,
-                    "decoration" => &mut config.decoration,
-                    "animations" => &mut config.animations,
-                    _ => {
-                        input = next_input;
-                        continue;
-                    }
-                };
-
-                for line in body.lines() {
-                    let line = line.trim();
-                    if line.is_empty() || line.starts_with('#') {
-                        continue;
-                    }
-
-                    if let Some((key, value)) = line.split_once('=') {
-                        map.insert(key.trim().to_string(), value.trim().to_string());
+            match directive {
+                "bind" => {
+                    // format: bind = MODS, KEY, dispatcher, arg
+                    let parts: Vec<&str> = body.split(',').map(|s| s.trim()).collect();
+                    if parts.len() >= 3 {
+                        config.binds.push(Keybind {
+                            mods: parse_mods(parts[0]),
+                            key: parts[1].to_string(),
+                            dispatcher: parts[2].to_string(),
+                            arg: parts.get(3).unwrap_or(&"").to_string(),
+                        });
                     }
                 }
-                input = next_input;
+                "exec-once" => {
+                    config.exec_once.push(body.to_string());
+                }
+                _ => {
+                    // handle sections (old logic or expand for simple key-value)
+                }
             }
-            Err(_) => break,
         }
     }
 
     config
+}
+
+fn parse_mods(input: &str) -> u32 {
+    let mut mods = 0;
+    for part in input.split('&') {
+        match part.to_uppercase().as_str() {
+            "SUPER" | "MOD4" | "WIN" => mods |= 0x0008, // MOD_WIN
+            "SHIFT" => mods |= 0x0004,
+            "CTRL" | "CONTROL" => mods |= 0x0002,
+            "ALT" => mods |= 0x0001,
+            _ => {}
+        }
+    }
+    mods
 }
