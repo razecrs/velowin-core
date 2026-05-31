@@ -9,6 +9,7 @@ use windows::{
 };
 use crate::managers::WindowManager::WindowManager;
 use crate::managers::KeybindManager::KeybindManager;
+use crate::managers::MonitorManager::MonitorManager;
 use crate::managers::animation::AnimationManager::AnimationManager;
 use crate::config::ConfigManager::parse_config;
 use crate::render::Renderer;
@@ -28,6 +29,10 @@ pub static KB: Lazy<Arc<Mutex<KeybindManager>>> = Lazy::new(|| {
     Arc::new(Mutex::new(KeybindManager::new(parse_config(dummy_conf))))
 });
 
+pub static MN: Lazy<Arc<Mutex<MonitorManager>>> = Lazy::new(|| {
+    Arc::new(Mutex::new(MonitorManager::new()))
+});
+
 pub static ANIMATION_MANAGER: Lazy<Arc<AnimationManager>> = Lazy::new(|| {
     Arc::new(AnimationManager::new())
 });
@@ -42,11 +47,17 @@ pub fn init() -> Result<()> {
         }
         println!("DirectComposition Renderer Initialized.");
 
+        // Refresh monitors list
+        MN.lock().unwrap().refresh();
+
+        // Grab windows that are already open (Startup Scan)
+        scan_existing_windows();
+
         // Start Animation Tick Thread
         std::thread::spawn(|| {
             loop {
                 ANIMATION_MANAGER.tick();
-                std::thread::sleep(std::time::Duration::from_millis(16)); // ~60fps
+                std::thread::sleep(std::time::Duration::from_millis(16));
             }
         });
 
@@ -59,7 +70,7 @@ pub fn init() -> Result<()> {
 
         let _event_hook = SetWinEventHook(
             EVENT_OBJECT_CREATE,
-            EVENT_OBJECT_DESTROY,
+            EVENT_OBJECT_LOCATIONCHANGE,
             None,
             Some(win_event_proc),
             0,
@@ -78,6 +89,22 @@ pub fn init() -> Result<()> {
         );
     }
     Ok(())
+}
+
+unsafe fn scan_existing_windows() {
+    println!("Scanning existing windows...");
+    let _ = unsafe { EnumWindows(Some(enum_windows_proc), LPARAM(0)) };
+}
+
+unsafe extern "system" fn enum_windows_proc(hwnd: HWND, _: LPARAM) -> BOOL {
+    if is_top_level_window(hwnd) {
+        let title = get_window_title(hwnd);
+        let class_name = get_window_class(hwnd);
+        println!("[Found] {} ({})", title, class_name);
+        let mut wm = WM.lock().unwrap();
+        wm.add_window(hwnd, title, class_name);
+    }
+    true.into()
 }
 
 unsafe extern "system" fn keyboard_proc(code: i32, w_param: WPARAM, l_param: LPARAM) -> LRESULT {
@@ -123,26 +150,26 @@ unsafe extern "system" fn win_event_proc(
         return;
     }
 
-    let mut wm = WM.lock().unwrap();
-
     match event {
-        EVENT_OBJECT_CREATE => {
+        EVENT_OBJECT_CREATE | EVENT_OBJECT_SHOW => {
             if is_top_level_window(hwnd) {
-                let title = get_window_title(hwnd);
-                let class_name = get_window_class(hwnd);
-                println!("[Created] {} ({})", title, class_name);
-                wm.add_window(hwnd, title, class_name);
+                let mut wm = WM.lock().unwrap();
+                if !wm.active_windows.contains_key(&(hwnd.0 as isize)) {
+                    let title = get_window_title(hwnd);
+                    let class_name = get_window_class(hwnd);
+                    println!("[Created/Shown] {} ({})", title, class_name);
+                    wm.add_window(hwnd, title, class_name);
+                }
             }
         }
         EVENT_OBJECT_DESTROY => {
+            let mut wm = WM.lock().unwrap();
             wm.remove_window(hwnd);
         }
         EVENT_SYSTEM_FOREGROUND => {
             println!("[Foreground] {:?}", hwnd);
             let mut wm = WM.lock().unwrap();
-            // TODO: set active window, trigger focus animations
             if let Some(window) = wm.active_windows.get_mut(&(hwnd.0 as isize)) {
-                // fade in active window (just a test animation)
                 window.opacity.set(1.0);
             }
         }
@@ -155,9 +182,32 @@ fn is_top_level_window(hwnd: HWND) -> bool {
         let style = GetWindowLongW(hwnd, GWL_STYLE) as u32;
         let ex_style = GetWindowLongW(hwnd, GWL_EXSTYLE) as u32;
         let is_visible = IsWindowVisible(hwnd).as_bool();
-        let is_child = (style & WS_CHILD.0) != 0;
-        let is_tool_window = (ex_style & WS_EX_TOOLWINDOW.0) != 0;
-        is_visible && !is_child && !is_tool_window
+        
+        let mut class_text = [0u16; 512];
+        let len = GetClassNameW(hwnd, &mut class_text);
+        let class_name = String::from_utf16_lossy(&class_text[..len as usize]);
+
+        if !is_visible || (style & WS_CHILD.0) != 0 { return false; }
+        if (ex_style & WS_EX_TOOLWINDOW.0) != 0 { return false; }
+
+        let ignored_classes = [
+            "Xaml_WindowedPopupClass",
+            "tooltips_class32",
+            "DroppyClass",
+            "ApplicationFrameTitleBarWindow",
+            "GhostWindow",
+        ];
+
+        if ignored_classes.iter().any(|&c| class_name.contains(c)) {
+            return false;
+        }
+
+        let title = get_window_title(hwnd);
+        if title.is_empty() && (style & WS_SYSMENU.0) == 0 {
+            return false;
+        }
+
+        true
     }
 }
 
@@ -180,10 +230,10 @@ fn get_window_class(hwnd: HWND) -> String {
 unsafe extern "system" fn overlay_wnd_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
     match msg {
         WM_DESTROY => {
-            PostQuitMessage(0);
+            unsafe { PostQuitMessage(0) };
             LRESULT(0)
         }
-        _ => DefWindowProcW(hwnd, msg, wparam, lparam),
+        _ => unsafe { DefWindowProcW(hwnd, msg, wparam, lparam) },
     }
 }
 

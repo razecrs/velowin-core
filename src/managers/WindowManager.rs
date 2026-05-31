@@ -6,13 +6,13 @@ use crate::layout::algorithm::tiled::master::MasterLayout::MasterLayout;
 use crate::helpers::Types::SendHWND;
 use crate::desktop::Window::WindowState;
 use crate::desktop::Workspace::{Workspace, LayoutType};
-use crate::Compositor::KB;
+use crate::Compositor::{KB, MN};
 
 pub struct WindowManager {
     pub active_windows: HashMap<isize, WindowState>,
     pub workspaces: Vec<Workspace>,
     pub active_workspace: u32,
-    pub master_layout: MasterLayout, // temporary global for testing
+    pub master_layout: MasterLayout,
 }
 
 impl WindowManager {
@@ -38,13 +38,11 @@ impl WindowManager {
         let send_hwnd = SendHWND(hwnd);
         let mut state = WindowState::new(send_hwnd, title, class_name, self.active_workspace);
         
-        // Apply window rules (Hyprland style)
         let config = KB.lock().unwrap().config.clone();
         for rule in &config.window_rules {
             if state.title.contains(&rule.regex) || state.class_name.contains(&rule.regex) {
                 match rule.rule.as_str() {
                     "float" => state.is_floating = true,
-                    "workspace 4" => state.workspace_id = 4, // placeholder
                     _ => {}
                 }
             }
@@ -58,11 +56,29 @@ impl WindowManager {
                 LayoutType::Dwindle => {
                     match &mut ws.root {
                         None => {
-                            unsafe {
-                                let sw = GetSystemMetrics(SM_CXSCREEN);
-                                let sh = GetSystemMetrics(SM_CYSCREEN);
-                                ws.root = Some(DwindleNode::new_leaf(send_hwnd, Rect { x: 0, y: 0, width: sw, height: sh }));
-                            }
+                            // Use MonitorManager to get the correct work area
+                            let mn = MN.lock().unwrap();
+                            let monitor = mn.get_monitor_for_window(hwnd).cloned().unwrap_or_else(|| {
+                                // fallback to primary or default
+                                mn.monitors.iter().find(|m| m.is_primary).cloned().unwrap_or_else(|| {
+                                    // extreme fallback
+                                    crate::managers::MonitorManager::Monitor {
+                                        hmonitor: crate::managers::MonitorManager::SendHMONITOR(windows::Win32::Graphics::Gdi::HMONITOR(std::ptr::null_mut())),
+                                        rect: windows::Win32::Foundation::RECT::default(),
+                                        work_rect: windows::Win32::Foundation::RECT { left: 0, top: 0, right: 1920, bottom: 1080 },
+                                        dpi: 96,
+                                        is_primary: true,
+                                    }
+                                })
+                            });
+
+                            let wr = monitor.work_rect;
+                            ws.root = Some(DwindleNode::new_leaf(send_hwnd, Rect { 
+                                x: wr.left, 
+                                y: wr.top, 
+                                width: wr.right - wr.left, 
+                                height: wr.bottom - wr.top 
+                            }));
                         }
                         Some(root) => {
                             root.split(send_hwnd);
@@ -85,8 +101,8 @@ impl WindowManager {
 
     pub fn recalculate_layout(&self) {
         let config = KB.lock().unwrap().config.clone();
-        let gaps_in = config.get_int("general", "gaps_in", 5);
-        let gaps_out = config.get_int("general", "gaps_out", 20);
+        let gaps_in = config.get_int("general", "gaps_in", 2);
+        let gaps_out = config.get_int("general", "gaps_out", 5);
 
         if let Some(ws) = self.workspaces.iter().find(|w| w.id == self.active_workspace) {
             match ws.layout {
@@ -97,9 +113,7 @@ impl WindowManager {
                         self.apply_layout_results(results);
                     }
                 }
-                LayoutType::Master => {
-                    // TODO: integrate master layout properly into workspaces
-                }
+                _ => {}
             }
         }
     }
@@ -107,6 +121,8 @@ impl WindowManager {
     fn apply_layout_results(&self, results: Vec<(SendHWND, Rect)>) {
         for (send_hwnd, rect) in results {
             unsafe {
+                let _ = windows::Win32::UI::WindowsAndMessaging::ShowWindow(send_hwnd.0, windows::Win32::UI::WindowsAndMessaging::SW_RESTORE);
+
                 if let Some(window) = self.active_windows.get(&(send_hwnd.0.0 as isize)) {
                     crate::render::Renderer::CreateBorderWrapper(send_hwnd, 2, 10.0);
                     crate::render::Renderer::SetBorderAngleWrapper(send_hwnd, window.border_angle.value);

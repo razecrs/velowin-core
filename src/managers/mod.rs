@@ -1,5 +1,6 @@
 pub mod KeybindManager;
 pub mod WindowManager;
+pub mod MonitorManager;
 pub mod CursorManager;
 pub mod EventManager;
 pub mod PointerManager;
