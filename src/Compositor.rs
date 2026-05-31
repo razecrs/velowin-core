@@ -4,7 +4,9 @@ use windows::{
     Win32::UI::Accessibility::*,
     Win32::UI::WindowsAndMessaging::*,
     Win32::UI::Input::KeyboardAndMouse::*,
+    Win32::UI::HiDpi::*,
     Win32::Graphics::Gdi::*,
+    Win32::Graphics::Dwm::*,
     Win32::System::LibraryLoader::GetModuleHandleW,
 };
 use crate::managers::WindowManager::WindowManager;
@@ -13,6 +15,7 @@ use crate::managers::MonitorManager::MonitorManager;
 use crate::managers::animation::AnimationManager::AnimationManager;
 use crate::config::ConfigManager::parse_config;
 use crate::render::Renderer;
+use crate::helpers::Types::{SendHHOOK, SendHWINEVENTHOOK};
 use std::sync::{Arc, Mutex};
 use once_cell::sync::Lazy;
 
@@ -24,6 +27,7 @@ pub static KB: Lazy<Arc<Mutex<KeybindManager>>> = Lazy::new(|| {
     let dummy_conf = "
         bind = SUPER, Return, exec, powershell
         bind = SUPER, Q, killactive,
+        bind = SUPER, V, togglefloating,
         exec-once = start velowin-bar
     ";
     Arc::new(Mutex::new(KeybindManager::new(parse_config(dummy_conf))))
@@ -37,10 +41,17 @@ pub static ANIMATION_MANAGER: Lazy<Arc<AnimationManager>> = Lazy::new(|| {
     Arc::new(AnimationManager::new())
 });
 
+static KB_HOOK: Mutex<Option<SendHHOOK>> = Mutex::new(None);
+static EVENT_HOOK: Mutex<Option<SendHWINEVENTHOOK>> = Mutex::new(None);
+static FOREGROUND_HOOK: Mutex<Option<SendHWINEVENTHOOK>> = Mutex::new(None);
+
 pub fn init() -> Result<()> {
     unsafe {
         crate::helpers::Logger::init();
         crate::velowin_log!("Velowin: Starting 1:1 Hyprland-like WM...");
+
+        // DOC-DRIVEN: Set Process DPI Awareness correctly for multi-monitor V2
+        let _ = SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
 
         let overlay_hwnd = create_overlay_window()?;
         
@@ -52,7 +63,6 @@ pub fn init() -> Result<()> {
 
         MN.lock().unwrap().refresh();
         scan_existing_windows();
-// ... (rest of function)
 
         std::thread::spawn(|| {
             loop {
@@ -61,32 +71,19 @@ pub fn init() -> Result<()> {
             }
         });
 
-        let _kb_hook = SetWindowsHookExW(
-            WH_KEYBOARD_LL,
-            Some(keyboard_proc),
-            HINSTANCE(GetModuleHandleW(None).unwrap_or_default().0),
-            0,
-        ).map_err(|_| Error::from_win32())?;
+        // LOCKING IN THE HOOKS (Keeping them in static memory)
+        let hmodule = GetModuleHandleW(None).unwrap_or_default();
+        let kb_hook = SetWindowsHookExW(WH_KEYBOARD_LL, Some(keyboard_proc), HINSTANCE(hmodule.0), 0)
+            .map_err(|_| Error::from_win32())?;
+        *KB_HOOK.lock().unwrap() = Some(SendHHOOK(kb_hook));
 
-        let _event_hook = SetWinEventHook(
-            EVENT_OBJECT_CREATE,
-            EVENT_OBJECT_LOCATIONCHANGE,
-            None,
-            Some(win_event_proc),
-            0,
-            0,
-            WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNPROCESS,
-        );
+        let event_hook = SetWinEventHook(EVENT_OBJECT_CREATE, EVENT_OBJECT_LOCATIONCHANGE, None, Some(win_event_proc), 0, 0, WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNPROCESS);
+        if !event_hook.0.is_null() { *EVENT_HOOK.lock().unwrap() = Some(SendHWINEVENTHOOK(event_hook)); }
 
-        let _foreground_hook = SetWinEventHook(
-            EVENT_SYSTEM_FOREGROUND,
-            EVENT_SYSTEM_FOREGROUND,
-            None,
-            Some(win_event_proc),
-            0,
-            0,
-            WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNPROCESS,
-        );
+        let fg_hook = SetWinEventHook(EVENT_SYSTEM_FOREGROUND, EVENT_SYSTEM_FOREGROUND, None, Some(win_event_proc), 0, 0, WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNPROCESS);
+        if !fg_hook.0.is_null() { *FOREGROUND_HOOK.lock().unwrap() = Some(SendHWINEVENTHOOK(fg_hook)); }
+
+        crate::velowin_log!("Hooks installed and persistence locked.");
     }
     Ok(())
 }
@@ -95,7 +92,6 @@ unsafe fn scan_existing_windows() {
     crate::velowin_log!("Scanning existing windows...");
     let _ = unsafe { EnumWindows(Some(enum_windows_proc), LPARAM(0)) };
 }
-
 
 unsafe extern "system" fn enum_windows_proc(hwnd: HWND, _: LPARAM) -> BOOL {
     if is_top_level_window(hwnd) {
@@ -115,23 +111,28 @@ unsafe extern "system" fn keyboard_proc(code: i32, w_param: WPARAM, l_param: LPA
         if w_param.0 == WM_KEYDOWN as usize || w_param.0 == WM_SYSKEYDOWN as usize {
             let mut mods = 0;
             unsafe {
-                if (GetKeyState(VK_LWIN.0 as i32) as u16 & 0x8000) != 0 || (GetKeyState(VK_RWIN.0 as i32) as u16 & 0x8000) != 0 {
+                if (GetAsyncKeyState(VK_LWIN.0 as i32) as u16 & 0x8000) != 0 || (GetAsyncKeyState(VK_RWIN.0 as i32) as u16 & 0x8000) != 0 {
                     mods |= 0x0008; 
                 }
-                if (GetKeyState(VK_SHIFT.0 as i32) as u16 & 0x8000) != 0 {
+                if (GetAsyncKeyState(VK_SHIFT.0 as i32) as u16 & 0x8000) != 0 {
                     mods |= 0x0004;
                 }
-                if (GetKeyState(VK_CONTROL.0 as i32) as u16 & 0x8000) != 0 {
+                if (GetAsyncKeyState(VK_CONTROL.0 as i32) as u16 & 0x8000) != 0 {
                     mods |= 0x0002;
                 }
-                if (GetKeyState(VK_MENU.0 as i32) as u16 & 0x8000) != 0 {
+                if (GetAsyncKeyState(VK_MENU.0 as i32) as u16 & 0x8000) != 0 {
                     mods |= 0x0001; 
                 }
             }
 
-            let kb = KB.lock().unwrap();
-            if kb.handle_key(kbd.vkCode, mods) {
-                return LRESULT(1); 
+            if mods != 0 {
+                // Heartbeat log: see if the keypress is detected
+                // crate::velowin_log!("[Input] Key: {:X}, Mods: {}", kbd.vkCode, mods);
+                
+                let kb = KB.lock().unwrap();
+                if kb.handle_key(kbd.vkCode, mods) {
+                    return LRESULT(1); 
+                }
             }
         }
     }
@@ -190,6 +191,11 @@ fn is_top_level_window(hwnd: HWND) -> bool {
 
         if !is_visible || (style & WS_CHILD.0) != 0 { return false; }
         if (ex_style & WS_EX_TOOLWINDOW.0) != 0 { return false; }
+
+        // DOC-DRIVEN: Check if window is cloaked (on another desktop or suspended)
+        let mut cloaked: i32 = 0;
+        let _ = DwmGetWindowAttribute(hwnd, DWMWA_CLOAKED, &mut cloaked as *mut _ as *mut std::ffi::c_void, 4);
+        if cloaked != 0 { return false; }
 
         let ignored_classes = [
             "Xaml_WindowedPopupClass",

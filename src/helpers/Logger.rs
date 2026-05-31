@@ -25,15 +25,25 @@ pub fn log(msg: &str) {
     if let Some(file) = log_lock.as_mut() {
         let timestamp = chrono::Local::now().format("%Y-%m-%d %H:%M:%S%.3f");
         let line = format!("[{}] {}\n", timestamp, msg);
-        print!("{}", line); // still print to console for live feedback
+        print!("{}", line); 
         let _ = file.write_all(line.as_bytes());
         let _ = file.flush();
     }
 }
 
+pub fn cleanup() {
+    log("Shutting down Velowin, restoring all windows...");
+    let mut wm = crate::Compositor::WM.lock().unwrap();
+    let hwnds: Vec<windows::Win32::Foundation::HWND> = wm.active_windows.values().map(|w| w.hwnd.0).collect();
+    for hwnd in hwnds {
+        wm.remove_window(hwnd);
+    }
+    log("Restoration complete.");
+}
+
 #[macro_export]
 macro_rules! velowin_log {
     ($($arg:tt)*) => {
-        $crate::helpers::Logger::log(&format!($($arg)*));
+        $crate::helpers::Logger::log(&format!($($arg)*))
     };
 }

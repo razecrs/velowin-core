@@ -35,6 +35,11 @@ fn main() -> Result<()> {
     unsafe {
         println!("Velowin: Starting 1:1 Hyprland-like WM...");
 
+        ctrlc::set_handler(move || {
+            crate::helpers::Logger::cleanup();
+            std::process::exit(0);
+        }).expect("Error setting Ctrl-C handler");
+
         Compositor::init()?;
 
         let mut msg = MSG::default();

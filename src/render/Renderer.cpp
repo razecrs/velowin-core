@@ -33,7 +33,6 @@ struct BorderData {
     
     bool shadowEnabled = true;
     int shadowRange = 15;
-    int shadowPower = 3;
     Color shadowColor = {0.0f, 0.0f, 0.0f, 0.5f};
 };
 
@@ -57,37 +56,50 @@ extern "C" {
         HRESULT hr = D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, D3D11_CREATE_DEVICE_BGRA_SUPPORT, 
                                        nullptr, 0, D3D11_SDK_VERSION, &g_State.d3dDevice, &featureLevel, nullptr);
         if (FAILED(hr)) return false;
+
         hr = g_State.d3dDevice->QueryInterface(__uuidof(IDXGIDevice), (void**)&g_State.dxgiDevice);
         if (FAILED(hr)) return false;
+
         D2D1_FACTORY_OPTIONS options = {};
         hr = D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, __uuidof(ID2D1Factory3), &options, (void**)&g_State.d2dFactory);
         if (FAILED(hr)) return false;
+
         hr = g_State.d2dFactory->CreateDevice(g_State.dxgiDevice, &g_State.d2dDevice);
         if (FAILED(hr)) return false;
+
         hr = g_State.d2dDevice->CreateDeviceContext(D2D1_DEVICE_CONTEXT_OPTIONS_NONE, &g_State.d2dContext);
         if (FAILED(hr)) return false;
+
         hr = DCompositionCreateDevice(g_State.dxgiDevice, __uuidof(IDCompositionDevice), (void**)&g_State.dcompDevice);
         if (FAILED(hr)) return false;
+
         hr = g_State.dcompDevice->CreateTargetForHwnd(overlayHwnd, true, &g_State.dcompTarget);
         if (FAILED(hr)) return false;
+
         hr = g_State.dcompDevice->CreateVisual(&g_State.rootVisual);
         if (FAILED(hr)) return false;
+
         g_State.dcompTarget->SetRoot(g_State.rootVisual);
         g_State.dcompDevice->Commit();
+
         return true;
     }
 
     __declspec(dllexport) void CreateBorder(HWND targetHwnd, int borderSize, float rounding) {
         if (g_State.activeBorders.count(targetHwnd)) return;
+
         BorderData data = {};
         data.targetHwnd = targetHwnd;
         data.borderSize = borderSize;
         data.rounding = rounding;
         data.colors = {{0.25f, 0.41f, 0.88f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f}};
+
         g_State.dcompDevice->CreateVisual(&data.visual);
         g_State.dcompDevice->CreateVisual(&data.shadowVisual);
+        
         g_State.rootVisual->AddVisual(data.shadowVisual, FALSE, nullptr);
         g_State.rootVisual->AddVisual(data.visual, TRUE, data.shadowVisual);
+        
         g_State.activeBorders[targetHwnd] = data;
     }
 
@@ -99,42 +111,47 @@ extern "C" {
     __declspec(dllexport) void UpdateBorderPosition(HWND targetHwnd, int x, int y, int width, int height) {
         auto it = g_State.activeBorders.find(targetHwnd);
         if (it == g_State.activeBorders.end()) return;
+
         BorderData& data = it->second;
 
-        // 1:1 Hyprland rounding correction math
-        const float roundingPower = 2.0f; // default
-        const float correctionOffset = (data.borderSize * (M_SQRT2 - 1.0f) * (std::max(2.0f - roundingPower, 0.0f)));
-        const float outerRound = (data.rounding + data.borderSize) - correctionOffset;
+        // 1:1 Hyprland rounding correction
+        const float correction = (data.borderSize * (M_SQRT2 - 1.0f));
+        const float outerRound = (data.rounding + data.borderSize) - correction;
 
-        float vX = (float)(x - data.borderSize);
-        float vY = (float)(y - data.borderSize);
+        data.visual->SetOffsetX((float)(x - data.borderSize));
+        data.visual->SetOffsetY((float)(y - data.borderSize));
+
         int sW = width + (data.borderSize * 2);
         int sH = height + (data.borderSize * 2);
-
-        data.visual->SetOffsetX(vX);
-        data.visual->SetOffsetY(vY);
 
         IDCompositionSurface* surface = nullptr;
         if (SUCCEEDED(g_State.dcompDevice->CreateSurface(sW, sH, DXGI_FORMAT_B8G8R8A8_UNORM, DXGI_ALPHA_MODE_PREMULTIPLIED, &surface))) {
             POINT offset; ID2D1DeviceContext* dc = nullptr;
             if (SUCCEEDED(surface->BeginDraw(nullptr, __uuidof(ID2D1DeviceContext), (void**)&dc, &offset))) {
                 dc->Clear(D2D1::ColorF(0, 0, 0, 0));
+                
                 std::vector<D2D1_GRADIENT_STOP> stops;
                 for (size_t i = 0; i < data.colors.size(); ++i) {
                     stops.push_back({ (float)i / (data.colors.size() - 1), D2D1::ColorF(data.colors[i].r, data.colors[i].g, data.colors[i].b, data.colors[i].a) });
                 }
+
                 ID2D1GradientStopCollection* pStopCollection = nullptr;
                 dc->CreateGradientStopCollection(stops.data(), (UINT32)stops.size(), &pStopCollection);
+
                 if (pStopCollection) {
                     float rad = data.angle * (3.14159f / 180.0f);
                     float cx = sW / 2.0f; float cy = sH / 2.0f;
                     float len = sqrtf((float)sW * sW + sH * sH);
                     D2D1_POINT_2F start = D2D1::Point2F(cx - cosf(rad) * len / 2, cy - sinf(rad) * len / 2);
                     D2D1_POINT_2F end = D2D1::Point2F(cx + cosf(rad) * len / 2, cy + sinf(rad) * len / 2);
+
                     ID2D1LinearGradientBrush* pBrush = nullptr;
                     dc->CreateLinearGradientBrush(D2D1::LinearGradientBrushProperties(start, end), pStopCollection, &pBrush);
+
                     if (pBrush) {
-                        D2D1_ROUNDED_RECT roundedRect = D2D1::RoundedRect(D2D1::RectF((float)data.borderSize/2, (float)data.borderSize/2, (float)sW - data.borderSize/2, (float)sH - data.borderSize/2), outerRound, outerRound);
+                        D2D1_ROUNDED_RECT roundedRect = D2D1::RoundedRect(
+                            D2D1::RectF((float)data.borderSize/2, (float)data.borderSize/2, (float)sW - data.borderSize/2, (float)sH - data.borderSize/2), 
+                            outerRound, outerRound);
                         dc->DrawRoundedRectangle(roundedRect, (ID2D1Brush*)pBrush, (float)data.borderSize);
                         pBrush->Release();
                     }
@@ -148,12 +165,34 @@ extern "C" {
         if (data.shadowEnabled) {
             int shW = sW + (data.shadowRange * 2);
             int shH = sH + (data.shadowRange * 2);
-            data.shadowVisual->SetOffsetX(vX - data.shadowRange);
-            data.shadowVisual->SetOffsetY(vY - data.shadowRange);
+            data.shadowVisual->SetOffsetX((float)(x - data.borderSize - data.shadowRange));
+            data.shadowVisual->SetOffsetY((float)(y - data.borderSize - data.shadowRange));
+
             IDCompositionSurface* shSurface = nullptr;
-            if (SUCCEEDED(g_State.dcompDevice->CreateSurface(shW, shH, DXGI_FORMAT_B8G8_UNORM, DXGI_ALPHA_MODE_PREMULTIPLIED, &shSurface))) {
-                // TODO: Shadow drawing logic
-                shSurface->Release();
+            if (SUCCEEDED(g_State.dcompDevice->CreateSurface(shW, shH, DXGI_FORMAT_B8G8R8A8_UNORM, DXGI_ALPHA_MODE_PREMULTIPLIED, &shSurface))) {
+                POINT offset; ID2D1DeviceContext* dc = nullptr;
+                if (SUCCEEDED(shSurface->BeginDraw(nullptr, __uuidof(ID2D1DeviceContext), (void**)&dc, &offset))) {
+                    dc->Clear(D2D1::ColorF(0, 0, 0, 0));
+                    
+                    // Draw a blurred rounded rect for the shadow
+                    ID2D1Effect* shadowEffect = nullptr;
+                    dc->CreateEffect(CLSID_D2D1Shadow, &shadowEffect);
+                    if (shadowEffect) {
+                        // Shadow rendering requires a source bitmap or command list
+                        // For a real 1:1, we'd use a more complex effect graph.
+                        // For now, we'll draw a soft solid rounded rect as proxy.
+                        ID2D1SolidColorBrush* sBrush = nullptr;
+                        dc->CreateSolidColorBrush(D2D1::ColorF(data.shadowColor.r, data.shadowColor.g, data.shadowColor.b, data.shadowColor.a), &sBrush);
+                        D2D1_ROUNDED_RECT sRect = D2D1::RoundedRect(
+                            D2D1::RectF((float)data.shadowRange, (float)data.shadowRange, (float)shW - data.shadowRange, (float)shH - data.shadowRange),
+                            outerRound, outerRound);
+                        dc->FillRoundedRectangle(sRect, sBrush);
+                        sBrush->Release();
+                        shadowEffect->Release();
+                    }
+                    shSurface->EndDraw(); dc->Release();
+                }
+                data.shadowVisual->SetContent(shSurface); shSurface->Release();
             }
         }
         g_State.dcompDevice->Commit();
