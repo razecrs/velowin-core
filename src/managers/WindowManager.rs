@@ -6,7 +6,8 @@ use crate::layout::algorithm::tiled::master::MasterLayout::MasterLayout;
 use crate::helpers::Types::SendHWND;
 use crate::desktop::Window::WindowState;
 use crate::desktop::Workspace::{Workspace, LayoutType};
-use crate::Compositor::{KB, MN};
+use crate::Compositor::MN;
+use crate::render::decorations::CHyprBorderDecoration::CHyprBorderDecoration;
 
 pub struct WindowManager {
     pub active_windows: HashMap<isize, WindowState>,
@@ -15,6 +16,7 @@ pub struct WindowManager {
     pub master_layout: MasterLayout,
     pub gaps_in: i32,
     pub gaps_out: i32,
+    pub border_decorator: CHyprBorderDecoration,
 }
 
 impl WindowManager {
@@ -35,6 +37,7 @@ impl WindowManager {
             master_layout: MasterLayout::new(),
             gaps_in: 0,
             gaps_out: 0,
+            border_decorator: CHyprBorderDecoration::new(),
         }
     }
 
@@ -134,24 +137,6 @@ impl WindowManager {
             let mut current_hdwp = hdwp;
 
             for (send_hwnd, rect) in results {
-                // 1. DWM Policy & Animation Control
-                let rendering_policy = windows::Win32::Graphics::Dwm::DWMNCRP_DISABLED;
-                let _ = windows::Win32::Graphics::Dwm::DwmSetWindowAttribute(
-                    send_hwnd.0,
-                    windows::Win32::Graphics::Dwm::DWMWA_NCRENDERING_POLICY,
-                    &rendering_policy as *const _ as *const std::ffi::c_void,
-                    4,
-                );
-
-                let disable_anim: i32 = 1;
-                let _ = windows::Win32::Graphics::Dwm::DwmSetWindowAttribute(
-                    send_hwnd.0,
-                    windows::Win32::Graphics::Dwm::DWMWA_TRANSITIONS_FORCEDISABLED,
-                    &disable_anim as *const _ as *const std::ffi::c_void,
-                    4,
-                );
-
-                // 2. Strip Decorations & Redraw
                 let mut style = GetWindowLongW(send_hwnd.0, GWL_STYLE) as u32;
                 if (style & WS_CAPTION.0) != 0 {
                     style &= !(WS_CAPTION.0 | WS_THICKFRAME.0 | WS_SYSMENU.0);
@@ -160,7 +145,6 @@ impl WindowManager {
 
                 let _ = ShowWindow(send_hwnd.0, SW_RESTORE);
 
-                // 3. Extended Frame Bounds Alignment (Tight Fit)
                 let mut w_rect = windows::Win32::Foundation::RECT::default();
                 let mut f_rect = windows::Win32::Foundation::RECT::default();
                 let _ = GetWindowRect(send_hwnd.0, &mut w_rect);
@@ -173,8 +157,8 @@ impl WindowManager {
 
                 let off_x = f_rect.left - w_rect.left;
                 let off_y = f_rect.top - w_rect.top;
-                let off_w = (w_rect.right - w_rect.left) - (f_rect.right - f_rect.left);
-                let off_h = (w_rect.bottom - w_rect.top) - (f_rect.bottom - f_rect.top);
+                let off_w = window_rect_width(&w_rect) - (f_rect.right - f_rect.left);
+                let off_h = window_rect_height(&w_rect) - (f_rect.bottom - f_rect.top);
 
                 if let Some(window) = self.active_windows.get_mut(&(send_hwnd.0.0 as isize)) {
                     window.x.set(rect.x - off_x);
@@ -182,12 +166,10 @@ impl WindowManager {
                     window.width.set(rect.width + off_w);
                     window.height.set(rect.height + off_h);
                     
-                    crate::render::Renderer::CreateBorderWrapper(send_hwnd, 2, 10.0);
-                    crate::render::Renderer::SetBorderAngleWrapper(send_hwnd, window.border_angle.value);
-                    crate::render::Renderer::UpdateBorderPositionWrapper(send_hwnd, rect.x, rect.y, rect.width, rect.height);
+                    // 1:1 Mirror: Delegate drawing to the decoration manager
+                    self.border_decorator.draw(send_hwnd, &rect, window.border_angle.value);
                 }
 
-                // Use SWP_FRAMECHANGED to force non-client area update (fixes taskbar overlap)
                 current_hdwp = DeferWindowPos(current_hdwp, send_hwnd.0, HWND(std::ptr::null_mut()), 
                     rect.x - off_x, rect.y - off_y, rect.width + off_w, rect.height + off_h, 
                     SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED).expect("DeferWindowPos failed");
@@ -196,3 +178,6 @@ impl WindowManager {
         }
     }
 }
+
+fn window_rect_width(rect: &windows::Win32::Foundation::RECT) -> i32 { rect.right - rect.left }
+fn window_rect_height(rect: &windows::Win32::Foundation::RECT) -> i32 { rect.bottom - rect.top }

@@ -3,7 +3,7 @@ use windows::Win32::UI::WindowsAndMessaging::*;
 use windows::Win32::Foundation::*;
 use std::process::Command;
 use crate::config::ConfigManager::Config;
-use crate::Compositor::WM;
+use crate::Compositor::{WM, KB};
 
 pub struct KeybindManager {
     pub config: Config,
@@ -69,4 +69,36 @@ impl KeybindManager {
             _ => crate::velowin_log!("[Dispatch] Unknown: {}", dispatcher),
         }
     }
+}
+
+pub unsafe extern "system" fn keyboard_proc(code: i32, w_param: WPARAM, l_param: LPARAM) -> LRESULT {
+    if code == HC_ACTION as i32 {
+        let kbd = unsafe { *(l_param.0 as *const KBDLLHOOKSTRUCT) };
+        
+        if w_param.0 == WM_KEYDOWN as usize || w_param.0 == WM_SYSKEYDOWN as usize {
+            let mut mods = 0;
+            unsafe {
+                if (GetAsyncKeyState(VK_LWIN.0 as i32) as u16 & 0x8000) != 0 || (GetAsyncKeyState(VK_RWIN.0 as i32) as u16 & 0x8000) != 0 {
+                    mods |= 0x0008; 
+                }
+                if (GetAsyncKeyState(VK_SHIFT.0 as i32) as u16 & 0x8000) != 0 {
+                    mods |= 0x0004;
+                }
+                if (GetAsyncKeyState(VK_CONTROL.0 as i32) as u16 & 0x8000) != 0 {
+                    mods |= 0x0002;
+                }
+                if (GetAsyncKeyState(VK_MENU.0 as i32) as u16 & 0x8000) != 0 {
+                    mods |= 0x0001; 
+                }
+            }
+
+            if mods != 0 {
+                let kb = KB.lock().unwrap();
+                if kb.handle_key(kbd.vkCode, mods) {
+                    return LRESULT(1); 
+                }
+            }
+        }
+    }
+    unsafe { CallNextHookEx(HHOOK(std::ptr::null_mut()), code, w_param, l_param) }
 }

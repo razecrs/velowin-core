@@ -33,6 +33,15 @@ pub fn log(msg: &str) {
 
 pub fn cleanup() {
     log("Shutting down Velowin, restoring all windows...");
+    
+    unsafe {
+        if let Ok(tray) = windows::Win32::UI::WindowsAndMessaging::FindWindowW(windows::core::w!("Shell_TrayWnd"), None) {
+            if !tray.0.is_null() {
+                let _ = windows::Win32::UI::WindowsAndMessaging::ShowWindow(tray, windows::Win32::UI::WindowsAndMessaging::SW_SHOW);
+            }
+        }
+    }
+
     let mut wm = crate::Compositor::WM.lock().unwrap();
     let hwnds: Vec<windows::Win32::Foundation::HWND> = wm.active_windows.values().map(|w| w.hwnd.0).collect();
     for hwnd in hwnds {
