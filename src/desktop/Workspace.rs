@@ -6,6 +6,7 @@ pub struct Workspace {
     pub layout: LayoutType,
 }
 
+#[derive(Debug, Clone, Copy)]
 pub enum LayoutType {
     Dwindle,
     Master,

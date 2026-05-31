@@ -23,7 +23,9 @@ impl AnimationManager {
             if angle_anim || opacity_anim {
                 needs_redraw = true;
                 // Update the GPU with new values
+                crate::velowin_log!("[Anim] Window '{}' border angle: {:.2}", window.title, window.border_angle.value);
                 crate::render::Renderer::SetBorderAngleWrapper(window.hwnd, window.border_angle.value);
+
             }
         }
 

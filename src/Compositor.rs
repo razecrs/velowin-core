@@ -22,7 +22,7 @@ pub static WM: Lazy<Arc<Mutex<WindowManager>>> = Lazy::new(|| {
 
 pub static KB: Lazy<Arc<Mutex<KeybindManager>>> = Lazy::new(|| {
     let dummy_conf = "
-        bind = SUPER, Return, exec, start alacritty
+        bind = SUPER, Return, exec, powershell
         bind = SUPER, Q, killactive,
         exec-once = start velowin-bar
     ";
@@ -39,21 +39,21 @@ pub static ANIMATION_MANAGER: Lazy<Arc<AnimationManager>> = Lazy::new(|| {
 
 pub fn init() -> Result<()> {
     unsafe {
+        crate::helpers::Logger::init();
+        crate::velowin_log!("Velowin: Starting 1:1 Hyprland-like WM...");
+
         let overlay_hwnd = create_overlay_window()?;
         
         if !Renderer::InitCompositor(overlay_hwnd) {
-            println!("Failed to initialize DirectX/DirectComposition renderer.");
+            crate::velowin_log!("Failed to initialize DirectX/DirectComposition renderer.");
             return Err(Error::from_win32());
         }
-        println!("DirectComposition Renderer Initialized.");
+        crate::velowin_log!("DirectComposition Renderer Initialized.");
 
-        // Refresh monitors list
         MN.lock().unwrap().refresh();
-
-        // Grab windows that are already open (Startup Scan)
         scan_existing_windows();
+// ... (rest of function)
 
-        // Start Animation Tick Thread
         std::thread::spawn(|| {
             loop {
                 ANIMATION_MANAGER.tick();
@@ -64,7 +64,7 @@ pub fn init() -> Result<()> {
         let _kb_hook = SetWindowsHookExW(
             WH_KEYBOARD_LL,
             Some(keyboard_proc),
-            GetModuleHandleW(None)?,
+            HINSTANCE(GetModuleHandleW(None).unwrap_or_default().0),
             0,
         ).map_err(|_| Error::from_win32())?;
 
@@ -92,15 +92,16 @@ pub fn init() -> Result<()> {
 }
 
 unsafe fn scan_existing_windows() {
-    println!("Scanning existing windows...");
+    crate::velowin_log!("Scanning existing windows...");
     let _ = unsafe { EnumWindows(Some(enum_windows_proc), LPARAM(0)) };
 }
+
 
 unsafe extern "system" fn enum_windows_proc(hwnd: HWND, _: LPARAM) -> BOOL {
     if is_top_level_window(hwnd) {
         let title = get_window_title(hwnd);
         let class_name = get_window_class(hwnd);
-        println!("[Found] {} ({})", title, class_name);
+        crate::velowin_log!("[Found] {} ({})", title, class_name);
         let mut wm = WM.lock().unwrap();
         wm.add_window(hwnd, title, class_name);
     }
@@ -115,7 +116,7 @@ unsafe extern "system" fn keyboard_proc(code: i32, w_param: WPARAM, l_param: LPA
             let mut mods = 0;
             unsafe {
                 if (GetKeyState(VK_LWIN.0 as i32) as u16 & 0x8000) != 0 || (GetKeyState(VK_RWIN.0 as i32) as u16 & 0x8000) != 0 {
-                    mods |= 0x0008; // Super
+                    mods |= 0x0008; 
                 }
                 if (GetKeyState(VK_SHIFT.0 as i32) as u16 & 0x8000) != 0 {
                     mods |= 0x0004;
@@ -124,13 +125,13 @@ unsafe extern "system" fn keyboard_proc(code: i32, w_param: WPARAM, l_param: LPA
                     mods |= 0x0002;
                 }
                 if (GetKeyState(VK_MENU.0 as i32) as u16 & 0x8000) != 0 {
-                    mods |= 0x0001; // Alt
+                    mods |= 0x0001; 
                 }
             }
 
             let kb = KB.lock().unwrap();
             if kb.handle_key(kbd.vkCode, mods) {
-                return LRESULT(1); // consume the key
+                return LRESULT(1); 
             }
         }
     }
@@ -157,7 +158,7 @@ unsafe extern "system" fn win_event_proc(
                 if !wm.active_windows.contains_key(&(hwnd.0 as isize)) {
                     let title = get_window_title(hwnd);
                     let class_name = get_window_class(hwnd);
-                    println!("[Created/Shown] {} ({})", title, class_name);
+                    crate::velowin_log!("[Created/Shown] {} ({})", title, class_name);
                     wm.add_window(hwnd, title, class_name);
                 }
             }
@@ -167,7 +168,6 @@ unsafe extern "system" fn win_event_proc(
             wm.remove_window(hwnd);
         }
         EVENT_SYSTEM_FOREGROUND => {
-            println!("[Foreground] {:?}", hwnd);
             let mut wm = WM.lock().unwrap();
             if let Some(window) = wm.active_windows.get_mut(&(hwnd.0 as isize)) {
                 window.opacity.set(1.0);
@@ -186,6 +186,7 @@ fn is_top_level_window(hwnd: HWND) -> bool {
         let mut class_text = [0u16; 512];
         let len = GetClassNameW(hwnd, &mut class_text);
         let class_name = String::from_utf16_lossy(&class_text[..len as usize]);
+        let title = get_window_title(hwnd);
 
         if !is_visible || (style & WS_CHILD.0) != 0 { return false; }
         if (ex_style & WS_EX_TOOLWINDOW.0) != 0 { return false; }
@@ -196,14 +197,20 @@ fn is_top_level_window(hwnd: HWND) -> bool {
             "DroppyClass",
             "ApplicationFrameTitleBarWindow",
             "GhostWindow",
+            "Windows.UI.Core.CoreWindow",
+            "Shell_TrayWnd",
+            "Progman",
         ];
 
         if ignored_classes.iter().any(|&c| class_name.contains(c)) {
             return false;
         }
 
-        let title = get_window_title(hwnd);
-        if title.is_empty() && (style & WS_SYSMENU.0) == 0 {
+        if class_name.contains("ApplicationFrameWindow") && title.is_empty() {
+            return false;
+        }
+
+        if title.is_empty() || title == "Windows Input Experience" || title == "Realtek Audio Console" {
             return false;
         }
 

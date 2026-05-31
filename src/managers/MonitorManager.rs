@@ -30,9 +30,11 @@ impl MonitorManager {
 
     pub fn refresh(&mut self) {
         self.monitors.clear();
+        println!("--- Refreshing Monitor List ---");
         unsafe {
             let _ = EnumDisplayMonitors(HDC(std::ptr::null_mut()), None, Some(Self::enum_monitor_callback), LPARAM(self as *mut Self as isize));
         }
+        println!("--- Total Monitors Found: {} ---", self.monitors.len());
     }
 
     unsafe extern "system" fn enum_monitor_callback(hmonitor: HMONITOR, _: HDC, rect: *mut RECT, lparam: LPARAM) -> BOOL {
@@ -47,13 +49,18 @@ impl MonitorManager {
             
             let _ = unsafe { GetDpiForMonitor(hmonitor, MDT_EFFECTIVE_DPI, &mut dpi_x, &mut dpi_y) };
             
-            manager.monitors.push(Monitor {
+            let m = Monitor {
                 hmonitor: SendHMONITOR(hmonitor),
                 rect: unsafe { *rect },
                 work_rect: info.monitorInfo.rcWork,
                 dpi: dpi_x,
                 is_primary: (info.monitorInfo.dwFlags & MONITORINFOF_PRIMARY) != 0,
-            });
+            };
+
+            println!("[Monitor] Primary: {}, DPI: {}, WorkArea: ({}, {}) to ({}, {})", 
+                m.is_primary, m.dpi, m.work_rect.left, m.work_rect.top, m.work_rect.right, m.work_rect.bottom);
+
+            manager.monitors.push(m);
         }
         
         true.into()

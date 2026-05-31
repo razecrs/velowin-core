@@ -1,0 +1,164 @@
+[2026-05-31 11:30:16.533] Velowin Log Initialized
+[2026-05-31 11:30:16.534] Velowin: Starting 1:1 Hyprland-like WM...
+[2026-05-31 11:30:16.623] DirectComposition Renderer Initialized.
+[2026-05-31 11:30:16.625] Scanning existing windows...
+[2026-05-31 11:30:16.626] [Found] PowerShell (CASCADIA_HOSTING_WINDOW_CLASS)
+[2026-05-31 11:30:16.626] --- Recalculating Layout (Workspace: 1, Mode: Dwindle) ---
+[2026-05-31 11:30:16.626] [Tiling] Arranging 1 windows
+[2026-05-31 11:30:16.639]   -> Window: 'PowerShell', Rect: (x:0, y:0, w:1536, h:816)
+[2026-05-31 11:30:16.643] --- Layout Applied ---
+[2026-05-31 11:30:16.644] [Found] Settings (ApplicationFrameWindow)
+[2026-05-31 11:30:16.644] --- Recalculating Layout (Workspace: 1, Mode: Dwindle) ---
+[2026-05-31 11:30:16.644] [Tiling] Arranging 2 windows
+[2026-05-31 11:30:16.645]   -> Window: 'PowerShell', Rect: (x:0, y:0, w:768, h:816)
+[2026-05-31 11:30:16.704]   -> Window: 'Settings', Rect: (x:768, y:0, w:768, h:816)
+[2026-05-31 11:30:16.720] --- Layout Applied ---
+[2026-05-31 11:30:16.721] [Found] qBittorrent v5.2.1 (Qt6103QWindowIcon)
+[2026-05-31 11:30:16.721] --- Recalculating Layout (Workspace: 1, Mode: Dwindle) ---
+[2026-05-31 11:30:16.721] [Tiling] Arranging 3 windows
+[2026-05-31 11:30:16.723]   -> Window: 'PowerShell', Rect: (x:0, y:0, w:768, h:816)
+[2026-05-31 11:30:16.740]   -> Window: 'Settings', Rect: (x:768, y:0, w:768, h:408)
+[2026-05-31 11:30:16.759]   -> Window: 'qBittorrent v5.2.1', Rect: (x:768, y:408, w:768, h:408)
+[2026-05-31 11:30:16.765] --- Layout Applied ---
+[2026-05-31 11:30:16.765] [Found] Forza Horizon 6 [FitGirl Repack] - File Explorer (CabinetWClass)
+[2026-05-31 11:30:16.765] --- Recalculating Layout (Workspace: 1, Mode: Dwindle) ---
+[2026-05-31 11:30:16.766] [Tiling] Arranging 4 windows
+[2026-05-31 11:30:16.766]   -> Window: 'PowerShell', Rect: (x:0, y:0, w:768, h:816)
+[2026-05-31 11:30:16.779]   -> Window: 'Settings', Rect: (x:768, y:0, w:768, h:408)
+[2026-05-31 11:30:16.791]   -> Window: 'qBittorrent v5.2.1', Rect: (x:768, y:408, w:384, h:408)
+[2026-05-31 11:30:16.826]   -> Window: 'Forza Horizon 6 [FitGirl Repack] - File Explorer', Rect: (x:1152, y:408, w:384, h:408)
+[2026-05-31 11:30:16.862] --- Layout Applied ---
+[2026-05-31 11:30:16.863] [Found] @Kayla 🎀 - Discord (Chrome_WidgetWin_1)
+[2026-05-31 11:30:16.863] --- Recalculating Layout (Workspace: 1, Mode: Dwindle) ---
+[2026-05-31 11:30:16.863] [Tiling] Arranging 5 windows
+[2026-05-31 11:30:16.864]   -> Window: 'PowerShell', Rect: (x:0, y:0, w:768, h:816)
+[2026-05-31 11:30:16.868]   -> Window: 'Settings', Rect: (x:768, y:0, w:768, h:408)
+[2026-05-31 11:30:16.876]   -> Window: 'qBittorrent v5.2.1', Rect: (x:768, y:408, w:384, h:408)
+[2026-05-31 11:30:16.883]   -> Window: 'Forza Horizon 6 [FitGirl Repack] - File Explorer', Rect: (x:1152, y:408, w:384, h:204)
+[2026-05-31 11:30:16.998]   -> Window: '@Kayla 🎀 - Discord', Rect: (x:1152, y:612, w:384, h:204)
+[2026-05-31 11:30:17.003] --- Layout Applied ---
+[2026-05-31 11:30:17.005] [Found] FitGirl-Repacks.Site Official Pastebin and 6 more pages - Personal - Microsoft​ Edge (Chrome_WidgetWin_1)
+[2026-05-31 11:30:17.005] --- Recalculating Layout (Workspace: 1, Mode: Dwindle) ---
+[2026-05-31 11:30:17.005] [Tiling] Arranging 6 windows
+[2026-05-31 11:30:17.005]   -> Window: 'PowerShell', Rect: (x:0, y:0, w:768, h:816)
+[2026-05-31 11:30:17.014]   -> Window: 'Settings', Rect: (x:768, y:0, w:768, h:408)
+[2026-05-31 11:30:17.025]   -> Window: 'qBittorrent v5.2.1', Rect: (x:768, y:408, w:384, h:408)
+[2026-05-31 11:30:17.035]   -> Window: 'Forza Horizon 6 [FitGirl Repack] - File Explorer', Rect: (x:1152, y:408, w:384, h:204)
+[2026-05-31 11:30:17.097]   -> Window: '@Kayla 🎀 - Discord', Rect: (x:1152, y:612, w:192, h:204)
+[2026-05-31 11:30:17.181]   -> Window: 'FitGirl-Repacks.Site Official Pastebin and 6 more pages - Personal - Microsoft​ Edge', Rect: (x:1344, y:612, w:192, h:204)
+[2026-05-31 11:30:17.203] --- Layout Applied ---
+[2026-05-31 11:30:17.203] [Found] Hyperwin — AnimatedVariable.rs (Zed::Window)
+[2026-05-31 11:30:17.204] --- Recalculating Layout (Workspace: 1, Mode: Dwindle) ---
+[2026-05-31 11:30:17.204] [Tiling] Arranging 7 windows
+[2026-05-31 11:30:17.204]   -> Window: 'PowerShell', Rect: (x:0, y:0, w:768, h:816)
+[2026-05-31 11:30:17.206]   -> Window: 'Settings', Rect: (x:768, y:0, w:768, h:408)
+[2026-05-31 11:30:17.212]   -> Window: 'qBittorrent v5.2.1', Rect: (x:768, y:408, w:384, h:408)
+[2026-05-31 11:30:17.219]   -> Window: 'Forza Horizon 6 [FitGirl Repack] - File Explorer', Rect: (x:1152, y:408, w:384, h:204)
+[2026-05-31 11:30:17.247]   -> Window: '@Kayla 🎀 - Discord', Rect: (x:1152, y:612, w:192, h:204)
+[2026-05-31 11:30:17.249]   -> Window: 'FitGirl-Repacks.Site Official Pastebin and 6 more pages - Personal - Microsoft​ Edge', Rect: (x:1344, y:612, w:192, h:102)
+[2026-05-31 11:30:17.314]   -> Window: 'Hyperwin — AnimatedVariable.rs', Rect: (x:1344, y:714, w:192, h:102)
+[2026-05-31 11:30:17.323] --- Layout Applied ---
+[2026-05-31 11:30:17.326] [Anim] Window 'Hyperwin — AnimatedVariable.rs' border angle: 352.43
+[2026-05-31 11:30:17.326] --- Recalculating Layout (Workspace: 1, Mode: Dwindle) ---
+[2026-05-31 11:30:17.326] [Tiling] Arranging 7 windows
+[2026-05-31 11:30:17.327]   -> Window: 'PowerShell', Rect: (x:0, y:0, w:768, h:816)
+[2026-05-31 11:30:17.327]   -> Window: 'Settings', Rect: (x:768, y:0, w:768, h:408)
+[2026-05-31 11:30:17.329]   -> Window: 'qBittorrent v5.2.1', Rect: (x:768, y:408, w:384, h:408)
+[2026-05-31 11:30:17.333]   -> Window: 'Forza Horizon 6 [FitGirl Repack] - File Explorer', Rect: (x:1152, y:408, w:384, h:204)
+[2026-05-31 11:30:17.369]   -> Window: '@Kayla 🎀 - Discord', Rect: (x:1152, y:612, w:192, h:204)
+[2026-05-31 11:30:17.372]   -> Window: 'FitGirl-Repacks.Site Official Pastebin and 6 more pages - Personal - Microsoft​ Edge', Rect: (x:1344, y:612, w:192, h:102)
+[2026-05-31 11:30:17.377]   -> Window: 'Hyperwin — AnimatedVariable.rs', Rect: (x:1344, y:714, w:192, h:102)
+[2026-05-31 11:30:17.382] --- Layout Applied ---
+[2026-05-31 11:30:17.399] [Anim] Window 'Hyperwin — AnimatedVariable.rs' border angle: 362.58
+[2026-05-31 11:30:17.399] --- Recalculating Layout (Workspace: 1, Mode: Dwindle) ---
+[2026-05-31 11:30:17.399] [Tiling] Arranging 7 windows
+[2026-05-31 11:30:17.400]   -> Window: 'PowerShell', Rect: (x:0, y:0, w:768, h:816)
+[2026-05-31 11:30:17.400]   -> Window: 'Settings', Rect: (x:768, y:0, w:768, h:408)
+[2026-05-31 11:30:17.401]   -> Window: 'qBittorrent v5.2.1', Rect: (x:768, y:408, w:384, h:408)
+[2026-05-31 11:30:17.401]   -> Window: 'Forza Horizon 6 [FitGirl Repack] - File Explorer', Rect: (x:1152, y:408, w:384, h:204)
+[2026-05-31 11:30:17.404]   -> Window: '@Kayla 🎀 - Discord', Rect: (x:1152, y:612, w:192, h:204)
+[2026-05-31 11:30:17.409]   -> Window: 'FitGirl-Repacks.Site Official Pastebin and 6 more pages - Personal - Microsoft​ Edge', Rect: (x:1344, y:612, w:192, h:102)
+[2026-05-31 11:30:17.415]   -> Window: 'Hyperwin — AnimatedVariable.rs', Rect: (x:1344, y:714, w:192, h:102)
+[2026-05-31 11:30:17.421] --- Layout Applied ---
+[2026-05-31 11:30:17.437] [Anim] Window 'Hyperwin — AnimatedVariable.rs' border angle: 362.96
+[2026-05-31 11:30:17.437] --- Recalculating Layout (Workspace: 1, Mode: Dwindle) ---
+[2026-05-31 11:30:17.437] [Tiling] Arranging 7 windows
+[2026-05-31 11:30:17.438]   -> Window: 'PowerShell', Rect: (x:0, y:0, w:768, h:816)
+[2026-05-31 11:30:17.439]   -> Window: 'Settings', Rect: (x:768, y:0, w:768, h:408)
+[2026-05-31 11:30:17.439]   -> Window: 'qBittorrent v5.2.1', Rect: (x:768, y:408, w:384, h:408)
+[2026-05-31 11:30:17.439]   -> Window: 'Forza Horizon 6 [FitGirl Repack] - File Explorer', Rect: (x:1152, y:408, w:384, h:204)
+[2026-05-31 11:30:17.443]   -> Window: '@Kayla 🎀 - Discord', Rect: (x:1152, y:612, w:192, h:204)
+[2026-05-31 11:30:17.447]   -> Window: 'FitGirl-Repacks.Site Official Pastebin and 6 more pages - Personal - Microsoft​ Edge', Rect: (x:1344, y:612, w:192, h:102)
+[2026-05-31 11:30:17.450]   -> Window: 'Hyperwin — AnimatedVariable.rs', Rect: (x:1344, y:714, w:192, h:102)
+[2026-05-31 11:30:17.455] --- Layout Applied ---
+[2026-05-31 11:30:17.471] [Anim] Window 'Hyperwin — AnimatedVariable.rs' border angle: 361.86
+[2026-05-31 11:30:17.472] --- Recalculating Layout (Workspace: 1, Mode: Dwindle) ---
+[2026-05-31 11:30:17.472] [Tiling] Arranging 7 windows
+[2026-05-31 11:30:17.473]   -> Window: 'PowerShell', Rect: (x:0, y:0, w:768, h:816)
+[2026-05-31 11:30:17.474]   -> Window: 'Settings', Rect: (x:768, y:0, w:768, h:408)
+[2026-05-31 11:30:17.475]   -> Window: 'qBittorrent v5.2.1', Rect: (x:768, y:408, w:384, h:408)
+[2026-05-31 11:30:17.476]   -> Window: 'Forza Horizon 6 [FitGirl Repack] - File Explorer', Rect: (x:1152, y:408, w:384, h:204)
+[2026-05-31 11:30:17.478]   -> Window: '@Kayla 🎀 - Discord', Rect: (x:1152, y:612, w:192, h:204)
+[2026-05-31 11:30:17.482]   -> Window: 'FitGirl-Repacks.Site Official Pastebin and 6 more pages - Personal - Microsoft​ Edge', Rect: (x:1344, y:612, w:192, h:102)
+[2026-05-31 11:30:17.486]   -> Window: 'Hyperwin — AnimatedVariable.rs', Rect: (x:1344, y:714, w:192, h:102)
+[2026-05-31 11:30:17.490] --- Layout Applied ---
+[2026-05-31 11:30:26.614] --- Recalculating Layout (Workspace: 1, Mode: Dwindle) ---
+[2026-05-31 11:30:26.615] [Tiling] Arranging 7 windows
+[2026-05-31 11:30:26.615]   -> Window: 'PowerShell', Rect: (x:0, y:0, w:768, h:816)
+[2026-05-31 11:30:26.617]   -> Window: 'Settings', Rect: (x:768, y:0, w:768, h:408)
+[2026-05-31 11:30:26.617]   -> Window: 'qBittorrent v5.2.1', Rect: (x:768, y:408, w:384, h:408)
+[2026-05-31 11:30:26.618]   -> Window: 'Forza Horizon 6 [FitGirl Repack] - File Explorer', Rect: (x:1152, y:408, w:384, h:204)
+[2026-05-31 11:30:26.623]   -> Window: '@Kayla 🎀 - Discord', Rect: (x:1152, y:612, w:192, h:204)
+[2026-05-31 11:30:26.631]   -> Window: 'FitGirl-Repacks.Site Official Pastebin and 6 more pages - Personal - Microsoft​ Edge', Rect: (x:1344, y:612, w:192, h:102)
+[2026-05-31 11:30:26.635]   -> Window: 'Hyperwin — AnimatedVariable.rs', Rect: (x:1344, y:714, w:192, h:102)
+[2026-05-31 11:30:26.636] --- Layout Applied ---
+[2026-05-31 11:30:26.637] --- Recalculating Layout (Workspace: 1, Mode: Dwindle) ---
+[2026-05-31 11:30:26.638] [Tiling] Arranging 7 windows
+[2026-05-31 11:30:26.639]   -> Window: 'PowerShell', Rect: (x:0, y:0, w:768, h:816)
+[2026-05-31 11:30:26.640]   -> Window: 'Settings', Rect: (x:768, y:0, w:768, h:408)
+[2026-05-31 11:30:26.641]   -> Window: 'qBittorrent v5.2.1', Rect: (x:768, y:408, w:384, h:408)
+[2026-05-31 11:30:26.644]   -> Window: 'Forza Horizon 6 [FitGirl Repack] - File Explorer', Rect: (x:1152, y:408, w:384, h:204)
+[2026-05-31 11:30:26.652]   -> Window: '@Kayla 🎀 - Discord', Rect: (x:1152, y:612, w:192, h:204)
+[2026-05-31 11:30:26.655]   -> Window: 'FitGirl-Repacks.Site Official Pastebin and 6 more pages - Personal - Microsoft​ Edge', Rect: (x:1344, y:612, w:192, h:102)
+[2026-05-31 11:30:26.660]   -> Window: 'Hyperwin — AnimatedVariable.rs', Rect: (x:1344, y:714, w:192, h:102)
+[2026-05-31 11:30:26.661] --- Layout Applied ---
+[2026-05-31 11:30:40.323] --- Recalculating Layout (Workspace: 1, Mode: Dwindle) ---
+[2026-05-31 11:30:40.324] [Tiling] Arranging 7 windows
+[2026-05-31 11:30:40.324]   -> Window: 'PowerShell', Rect: (x:0, y:0, w:768, h:816)
+[2026-05-31 11:30:40.325]   -> Window: 'Settings', Rect: (x:768, y:0, w:768, h:408)
+[2026-05-31 11:30:40.325]   -> Window: 'qBittorrent v5.2.1', Rect: (x:768, y:408, w:384, h:408)
+[2026-05-31 11:30:40.326]   -> Window: 'Forza Horizon 6 [FitGirl Repack] - File Explorer', Rect: (x:1152, y:408, w:384, h:204)
+[2026-05-31 11:30:40.330]   -> Window: '@Kayla 🎀 - Discord', Rect: (x:1152, y:612, w:192, h:204)
+[2026-05-31 11:30:40.335]   -> Window: 'FitGirl-Repacks.Site Official Pastebin and 6 more pages - Personal - Microsoft​ Edge', Rect: (x:1344, y:612, w:192, h:102)
+[2026-05-31 11:30:40.338]   -> Window: 'Hyperwin — AnimatedVariable.rs', Rect: (x:1344, y:714, w:192, h:102)
+[2026-05-31 11:30:40.338] --- Layout Applied ---
+[2026-05-31 11:30:41.445] --- Recalculating Layout (Workspace: 1, Mode: Dwindle) ---
+[2026-05-31 11:30:41.446] [Tiling] Arranging 7 windows
+[2026-05-31 11:30:41.446]   -> Window: 'PowerShell', Rect: (x:0, y:0, w:768, h:816)
+[2026-05-31 11:30:41.448]   -> Window: 'Settings', Rect: (x:768, y:0, w:768, h:408)
+[2026-05-31 11:30:41.448]   -> Window: 'qBittorrent v5.2.1', Rect: (x:768, y:408, w:384, h:408)
+[2026-05-31 11:30:41.449]   -> Window: 'Forza Horizon 6 [FitGirl Repack] - File Explorer', Rect: (x:1152, y:408, w:384, h:204)
+[2026-05-31 11:30:41.452]   -> Window: '@Kayla 🎀 - Discord', Rect: (x:1152, y:612, w:192, h:204)
+[2026-05-31 11:30:41.455]   -> Window: 'FitGirl-Repacks.Site Official Pastebin and 6 more pages - Personal - Microsoft​ Edge', Rect: (x:1344, y:612, w:192, h:102)
+[2026-05-31 11:30:41.463]   -> Window: 'Hyperwin — AnimatedVariable.rs', Rect: (x:1344, y:714, w:192, h:102)
+[2026-05-31 11:30:41.465] --- Layout Applied ---
+[2026-05-31 11:31:07.476] --- Recalculating Layout (Workspace: 1, Mode: Dwindle) ---
+[2026-05-31 11:31:07.476] [Tiling] Arranging 7 windows
+[2026-05-31 11:31:07.477]   -> Window: 'PowerShell', Rect: (x:0, y:0, w:768, h:816)
+[2026-05-31 11:31:07.478]   -> Window: 'Settings', Rect: (x:768, y:0, w:768, h:408)
+[2026-05-31 11:31:07.479]   -> Window: 'qBittorrent v5.2.1', Rect: (x:768, y:408, w:384, h:408)
+[2026-05-31 11:31:07.481]   -> Window: 'Forza Horizon 6 [FitGirl Repack] - File Explorer', Rect: (x:1152, y:408, w:384, h:204)
+[2026-05-31 11:31:07.544]   -> Window: '@Kayla 🎀 - Discord', Rect: (x:1152, y:612, w:192, h:204)
+[2026-05-31 11:31:07.548]   -> Window: 'FitGirl-Repacks.Site Official Pastebin and 6 more pages - Personal - Microsoft​ Edge', Rect: (x:1344, y:612, w:192, h:102)
+[2026-05-31 11:31:07.554]   -> Window: 'Hyperwin — AnimatedVariable.rs', Rect: (x:1344, y:714, w:192, h:102)
+[2026-05-31 11:31:07.555] --- Layout Applied ---
+[2026-05-31 11:31:07.557] --- Recalculating Layout (Workspace: 1, Mode: Dwindle) ---
+[2026-05-31 11:31:07.557] [Tiling] Arranging 7 windows
+[2026-05-31 11:31:07.558]   -> Window: 'PowerShell', Rect: (x:0, y:0, w:768, h:816)
+[2026-05-31 11:31:07.562]   -> Window: 'Settings', Rect: (x:768, y:0, w:768, h:408)
+[2026-05-31 11:31:07.563]   -> Window: 'qBittorrent v5.2.1', Rect: (x:768, y:408, w:384, h:408)
+[2026-05-31 11:31:07.566]   -> Window: 'Forza Horizon 6 [FitGirl Repack] - File Explorer', Rect: (x:1152, y:408, w:384, h:204)
+[2026-05-31 11:31:07.648]   -> Window: '@Kayla 🎀 - Discord', Rect: (x:1152, y:612, w:192, h:204)
+[2026-05-31 11:31:07.655]   -> Window: 'FitGirl-Repacks.Site Official Pastebin and 6 more pages - Personal - Microsoft​ Edge', Rect: (x:1344, y:612, w:192, h:102)
+[2026-05-31 11:31:07.660]   -> Window: 'Hyperwin — AnimatedVariable.rs', Rect: (x:1344, y:714, w:192, h:102)
+[2026-05-31 11:31:07.662] --- Layout Applied ---
